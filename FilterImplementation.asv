@@ -1,0 +1,162 @@
+%Filter Implementation
+clear;clc;close all;
+L=10000;
+x=wgn(L,1,0); %random noise signal
+
+fs=8*1e3;
+t=((0:L-1)*(1/fs));
+t=t'*1e3;
+%% load coefficients
+lp=load("lowpass.mat");
+bp=load("bandpass.mat");
+hp=load("highpass.mat");
+
+%% quantise to single precision
+x=single(x);
+lp.SOSq=single(lp.SOS);
+lp.Gq=single(lp.G);
+bp.SOSq=single(bp.SOS);
+bp.Gq=single(bp.G);
+hp.SOSq=single(hp.SOS);
+hp.Gq=single(hp.G);
+
+%% Filter signals
+y_lp=filtfilt(lp.SOSq,lp.Gq,x);
+% y_lp=filter(b_lp,a_lp,x);
+y_bp=filtfilt(bp.SOSq,bp.Gq,x);
+y_hp=filtfilt(hp.SOSq,hp.Gq,x);
+
+% add filter outputs
+y_all=y_lp+y_bp+y_hp;
+y_LB=y_lp+y_bp;
+y_LH=y_lp+y_hp;
+y_BH=y_bp+y_hp;
+
+%% magnitude-phase plots
+Hlp = dfilt.df2sos(lp.SOSq,lp.Gq);
+Hbp = dfilt.df2sos(bp.SOSq,bp.Gq);
+Hhp = dfilt.df2sos(hp.SOSq,hp.Gq);
+fvtool(hlp);
+fvtool(hbp);
+fvtool(Hhp);
+%% plot pole zeros
+plotpz(lp);
+plotpz(bp);
+plotpz(hp);
+%%
+figure()
+tiledlayout(2,1)
+nexttile
+plotFFT(x);
+title('FFT Input signal x[n], wgn.')
+nexttile
+plotFFT(y_allpass);
+title('FFT allpass (lp+bp+hp) filter output y[n].')
+
+%% figures 
+%time domain of filters
+figure('Name','x[n] time')
+plottime(x,t);
+% plotsig(x);
+title('Input signal x[n], wgn.')
+
+figure('Name','lp time')
+plottime(y_lp,t);
+% plotsig(y_lp);
+title('Lowpass filter output y_1[n].')
+
+figure('Name','bp time')
+plottime(y_bp,t);
+% plotsig(y_bp);
+title('Bandpass filter output y_2[n].')
+
+figure('Name','hp time')
+plottime(y_hp,t);
+% plotsig(y_hp);
+title('Highpass filter output y_3[n].')
+%% frequency domain
+figure('Name','x[n] FFT')
+plotFFT(x);
+title('FFT Input signal x[n], wgn.')
+%%
+% freq plots for report
+figure('Name','lp FFT')
+plotFFT(x);
+plotFFT(y_lp);
+% plotsig(y_lp);
+title('FFT Lowpass filter output y_1[n].')
+%
+figure('Name','bp FFT')
+plotFFT(x);
+plotFFT(y_bp);
+% plotsig(y_bp);
+title('FFT Bandpass filter output y_2[n].')
+
+figure('Name','hp FFT')
+plotFFT(x);
+plotFFT(y_hp);
+% plotsig(y_hp);
+title('FFT Highpass filter output y_3[n].')
+
+figure('Name','all FFT')
+plotFFT(y_all);
+% plotFFT(x);
+% plotsig(y_hp);
+title('FFT allpass (lp+bp+hp) filter output y[n].')
+
+figure('Name','lp+bp FFT')
+plotFFT(y_LB);
+% plotFFT(x);
+% plotsig(y_hp);
+title('FFT expanded lp (lp+bp) filter output y[n].')
+
+figure('Name','lp+hp FFT')
+% plotFFT(x);
+plotFFT(y_LH);
+% plotsig(y_hp);
+title('FFT bandstop (lp+hp) filter output y[n].')
+
+figure('Name','bp+hp FFT')
+plotFFT(y_BH);
+% plotFFT(x);
+% plotsig(y_hp);
+title('FFT extended highpass (bp+hp) filter output y[n].')
+
+%%
+function plotFFT(x)
+    fs=8*1e3;
+    plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),abs(fft(x)));
+    xlabel('Hz');
+    ylabel('amplitude');
+    xlim([0 4000]);
+    hold on;
+end
+
+function plottime(x,t)
+    plot(t,x);
+    xlabel('t(ms)');
+    ylabel('amplitude');
+    xlim([0 t(end)])
+    hold on;
+end
+
+function plotsig(x)
+    plot(x);
+    xlabel('sample (n)');
+    ylabel('amplitude');
+    hold on;
+end
+
+function plotpz(x)
+    [z,p,~]=sos2zp(x.SOS,x.G);
+    [zq,pq,~]=sos2zp(x.SOSq,x.Gq);
+    figure()
+    tiledlayout(2,1)
+    nexttile
+    zplane(z,p);
+    title('Pole Zero - Pre-Quantization')
+    nexttile
+    zplane(zq,pq);
+    title('Pole Zero - Quantized')
+end
+

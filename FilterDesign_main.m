@@ -3,39 +3,70 @@ fs=8*1e3;
 fc1=fs/6;
 fc2=fs/3;
 x=wgn(10000,1,0);
+
+
 %% low pass
 [b_lp,a_lp]=sos2tf(SOS_lp,G_lp);
+
+% zpad=zeros(1,19);
+% a_lp=[a_lp zpad];
+% b_lp=[b_lp zpad];
 %%
-zpad=zeros(1,19);
-a_lp=[a_lp zpad];
-b_lp=[b_lp zpad];
+% lowpass.SOS=SOS_lp;
+% lowpass.G=G_lp;
+bandpass.SOS=SOS_bp;
+bandpass.G=G_bp;
+% highpass.SOS=SOS_hp;
+% highpass.G=G_hp;
+
+% save("lowpass64.mat","-struct","lowpass")
+save("bandpass64.mat","-struct","bandpass")
+% save("highpass64.mat","-struct","highpass")
+%%
+[z,p,~]=sos2zp(SOS_lp,G_lp);
+
+sos2=single(SOS_lp);
+g2=single(G_lp);
+[z2,p2,~]=sos2zp(sos2,g2);
+
+figure()
+tiledlayout(2,1)
+nexttile
+zplane(z,p);
+title('LP: Pole Zero - Pre-Quantization')
+nexttile
+zplane(z2,p2);
+title('LP: Pole Zero - Post-Quantization')
+%%
+[b_lp2,a_lp2]=sos2tf(sos2,g2);
+%%
 y_lp=filter(b_lp,a_lp,x);
-
-figure(1);
-plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),abs(fft(x)));
-xlabel('Hz');
-xlim([0 4000]);
-
-figure(2);
-plot(fs*(0:(1/length(y_lp)):(length(y_lp)-1)/length(y_lp)),abs(fft(y_lp)));
-xlabel('Hz');
-xlim([0 4000]);
-%%
-%% high pass
+y_lp2=filtfilt(sos2,g2,x);
+%% band pass
 [b_bp,a_bp]=sos2tf(SOS_bp,G_bp);
+% a_bp=[a_bp 0];
+% b_bp=[b_bp 0];
 %%
-a_bp=[a_bp 0];
-b_bp=[b_bp 0];
+% bandpass.a=a_bp;
+% bandpass.b=b_bp;
+% save("bandpass.mat","-struct","bandpass")
+
 %%
-y_bp=filter(b_bp,a_bp,x);
+% y_bp=filter(b_bp,a_bp,x);
 
 figure(3);
 plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),abs(fft(x)));
 xlabel('Hz');
 xlim([0 4000]);
-
+%%
 figure(4);
-plot(fs*(0:(1/length(y_bp)):(length(y_bp)-1)/length(y_bp)),abs(fft(y_bp)));
+tiledlayout(2,1)
+nexttile
+plot(fs*(0:(1/length(y_lp)):(length(y_lp)-1)/length(y_lp)),abs(fft(y_lp)));
+xlabel('Hz');
+xlim([0 4000]);
+nexttile
+plot(fs*(0:(1/length(y_lp2)):(length(y_lp2)-1)/length(y_lp2)),abs(fft(y_lp2)));
 xlabel('Hz');
 xlim([0 4000]);
 
@@ -44,8 +75,14 @@ xlim([0 4000]);
 % zpad=zeros(1,19);
 % a_hp=[a_hp zpad];
 % b_hp=[b_hp zpad];
-y_hp=filter(b_hp,a_hp,x);
+%%
+highpass.a=a_hp;
+highpass.b=b_hp;
+save("highpass.mat","-struct","highpass")
+%%
 
+y_hp=filter(b_hp,a_hp,x);
+%%
 figure(3);
 plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),abs(fft(x)));
 xlabel('Hz');
