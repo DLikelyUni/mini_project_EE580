@@ -72,6 +72,25 @@ trace.logType = "circular";
 
 bios.LOG_system.bufLen = 512;
 
+bios.HWI.instance("HWI_INT5").interruptSelectNumber = 65;
+bios.HWI.instance("HWI_INT5").fxn = prog.extern("switchHWI");
+bios.HWI.instance("HWI_INT5").useDispatcher = 1;
+bios.HWI.instance("HWI_INT5").interruptSelectNumber = 41;
+bios.HWI.instance("HWI_INT5").useDispatcher = 0;
+bios.HWI.instance("HWI_INT5").fxn = prog.extern("HWI_unused", "asm");
+bios.HWI.instance("HWI_INT5").interruptSelectNumber = 5;
+bios.PRD.instance("PWRM_slotFinalizer").order = 1;
+bios.PRD.create("PRD0");
+bios.PRD.instance("PRD0").order = 3;
+bios.PRD.instance("PRD0").period = 50;
+bios.PRD.instance("PRD0").fxn = prog.extern("dipPRD");
+bios.HWI.instance("HWI_INT5").interruptSelectNumber = 61;
+bios.HWI.instance("HWI_INT5").fxn = prog.extern("audioHWI");
+bios.HWI.instance("HWI_INT5").useDispatcher = 1;
+bios.TSK.create("TSK0");
+bios.TSK.instance("TSK0").order = 1;
+bios.TSK.instance("TSK0").fxn = prog.extern("processSamp");
+bios.SEM.create("sem");
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {
