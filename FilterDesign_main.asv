@@ -1,25 +1,40 @@
 %EE580 mini project filter design
+clear;close all;clc;
 fs=8*1e3;
 fc1=fs/6;
 fc2=fs/3;
 x=wgn(10000,1,0);
 
-%%
-% load("lowpass.mat");
-% load("bandpass.mat");
-% load("highpass.mat");
-%% low pass
-[b_lp,a_lp]=sos2tf(SOS_lp,G_lp);
 
+%% low pass
+[b_lp,a_lp]=sos2tf(lp.SOS,lp.G);
+[sos,g]=tf2sos(b_lp,a_lp);
 % zpad=zeros(1,19);
 % a_lp=[a_lp zpad];
 % b_lp=[b_lp zpad];
 %%
-lowpass.SOS=SOS_lp;
-lowpass.G=G_lp;
-lowpass.a=a_lp;
-lowpass.b=b_lp;
-save("lowpass.mat","-struct","lowpass")
+% lowpass.SOS=SOS_lp2;
+% lowpass.G=G_lp2;
+% bandpass.SOS=SOS_bp2;
+% bandpass.G=G_bp2;
+% highpass.SOS=SOS_hp2;
+% highpass.G=G_hp2;
+
+save("lowpass2.mat","-struct","lowpass")
+save("bandpass2.mat","-struct","bandpass")
+save("highpass2.mat","-struct","highpass")
+%%
+lowpass.SOS=SOS_lp2;
+lowpass.G=G_lp2;
+bandpass.SOS=SOS_bp2;
+bandpass.G=G_bp2;
+
+highpass.SOS=SOS_hp2;
+highpass.G=G_hp2;
+% 
+save("lowpass_t.mat","-struct","lowpass")
+
+save("highpass_t.mat","-struct","highpass")
 %%
 [z,p,~]=sos2zp(SOS_lp,G_lp);
 
@@ -56,9 +71,15 @@ figure(3);
 plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),abs(fft(x)));
 xlabel('Hz');
 xlim([0 4000]);
-
+%%
 figure(4);
+tiledlayout(2,1)
+nexttile
 plot(fs*(0:(1/length(y_lp)):(length(y_lp)-1)/length(y_lp)),abs(fft(y_lp)));
+xlabel('Hz');
+xlim([0 4000]);
+nexttile
+plot(fs*(0:(1/length(y_lp2)):(length(y_lp2)-1)/length(y_lp2)),abs(fft(y_lp2)));
 xlabel('Hz');
 xlim([0 4000]);
 

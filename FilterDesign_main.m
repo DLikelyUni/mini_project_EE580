@@ -1,4 +1,5 @@
 %EE580 mini project filter design
+clear;clc;
 fs=8*1e3;
 fc1=fs/6;
 fc2=fs/3;
@@ -6,22 +7,33 @@ x=wgn(10000,1,0);
 
 
 %% low pass
-[b_lp,a_lp]=sos2tf(SOS_lp,G_lp);
-
+[b_lp,a_lp]=sos2tf(lp.SOS,lp.G);
+[sos,g]=tf2sos(b_lp,a_lp);
 % zpad=zeros(1,19);
 % a_lp=[a_lp zpad];
 % b_lp=[b_lp zpad];
 %%
-% lowpass.SOS=SOS_lp;
-% lowpass.G=G_lp;
-bandpass.SOS=SOS_bp;
-bandpass.G=G_bp;
-% highpass.SOS=SOS_hp;
-% highpass.G=G_hp;
-
-% save("lowpass64.mat","-struct","lowpass")
-save("bandpass64.mat","-struct","bandpass")
-% save("highpass64.mat","-struct","highpass")
+% lowpass.SOS=SOS_lp2;
+% lowpass.G=G_lp2;
+% bandpass.SOS=SOS_bp2;
+% bandpass.G=G_bp2;
+% highpass.SOS=SOS_hp2;
+% highpass.G=G_hp2;
+% 
+% save("lowpass2.mat","-struct","lowpass")
+% save("bandpass2.mat","-struct","bandpass")
+% save("highpass2.mat","-struct","highpass")
+%%
+lowpass.SOS=SOS_lp2;
+lowpass.G=G_lp2;
+save("lowpass_t.mat","-struct","lowpass")
+%%
+bandpass.SOS=SOS_bp2;
+bandpass.G=G_bp2;
+save("bandpass_t.mat","-struct","bandpass")
+%%
+highpass.SOS=SOS_hp2;highpass.G=G_hp2;
+save("highpass_t.mat","-struct","highpass")
 %%
 [z,p,~]=sos2zp(SOS_lp,G_lp);
 
