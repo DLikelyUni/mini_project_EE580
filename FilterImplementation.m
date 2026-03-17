@@ -2,15 +2,19 @@
 clearvars;clc;
 % close all;
 L=10000;
+rng(1);
 x=wgn(L,1,0); %random noise signal
 
 fs=8*1e3;
+fc1=fs/6;
+fc2=fs/3;
+
 t=((0:L-1)*(1/fs));
 t=t'*1e3;
 % load coefficients
-lp=load("lowpass_t.mat");
-bp=load("bandpass_t.mat");
-hp=load("highpass_t.mat");
+lp=load("lowpass3.mat");
+bp=load("bandpass3.mat");
+hp=load("highpass3.mat");
 
 % quantise to single precision
 x=single(x);
@@ -36,18 +40,39 @@ y_BH=y_bp+y_hp;
 [b_lp,a_lp]=sos2tf(lp.SOSq,lp.Gq);
 [b_bp,a_bp]=sos2tf(bp.SOSq,bp.Gq);
 [b_hp,a_hp]=sos2tf(hp.SOSq,hp.Gq);
+% b_lp=single(b_lp);
+% a_lp=single(a_lp);
+
+
 % save_data;
-% %%
-% y_lp=filter(b_lp,a_lp,x);
-% y_bp=filter(b_bp,a_bp,x);
-% y_hp=filter(b_hp,a_hp,x);
+% pz plots of filter coefficients
+figure('Name','PZ plot of lp coeffs');
+zplane(b_lp, a_lp);
+title('Pole-Zero Plot from Coefficients');
+grid on;
+
+figure('Name','PZ plot of bp coeffs');
+zplane(b_bp, a_bp);
+title('Pole-Zero Plot from Coefficients');
+grid on;
+
+figure('Name','PZ plot of hp  coeffs');
+zplane(b_hp, a_hp);
+title('Pole-Zero Plot from Coefficients');
+grid on;
+%%
+y_lp=filter(b_lp,a_lp,x);
+y_bp=filter(b_bp,a_bp,x);
+y_hp=filter(b_hp,a_hp,x);
+y_all=y_lp+y_bp+y_hp;
+
 
 %% magnitude-phase plots
 Hlp = dfilt.df2sos(lp.SOSq,lp.Gq);
 Hbp = dfilt.df2sos(bp.SOSq,bp.Gq);
 Hhp = dfilt.df2sos(hp.SOSq,hp.Gq);
 %%
-fvtool(Hlp);
+% fvtool(Hlp);
 % fvtool(Hbp);
 % fvtool(Hhp);
 %% plot pole zeros
@@ -59,37 +84,20 @@ X=abs(fft(x));
 B=abs(fft(x-y_all));
 normB=(B-min(X))/(max(X)-min(X));
 normX=(X-min(X))/(max(X)-min(X));
-fs=8*1e3;
-
+% normdiff=normX-normB;
+errorpercent=max(normB)*100;
+%%
 figure('Name','normalised frequency plot of signal')
 plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),normX)
 hold on;
 plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),normB)
 title('Normalised error value in reconstruction of signal')
 ylabel('percentage')
+xlim([0 4000])
 
-errorpercent=max(normB)*100;
+
 %% figures 
-%time domain of filters
-figure('Name','x[n] time')
-plottime(x,t);
-% plotsig(x);
-title('Input signal x[n], wgn.')
 
-figure('Name','lp time')
-plottime(y_lp,t);
-% plotsig(y_lp);
-title('Lowpass filter output y_1[n].')
-
-figure('Name','bp time')
-plottime(y_bp,t);
-% plotsig(y_bp);
-title('Bandpass filter output y_2[n].')
-
-figure('Name','hp time')
-plottime(y_hp,t);
-% plotsig(y_hp);
-title('Highpass filter output y_3[n].')
 %% frequency domain
 figure('Name','x v y FFT')
 tiledlayout(2,1)
@@ -126,10 +134,12 @@ plotFFT(x);
 plotFFT(y_all);
 % plotsig(y_hp);
 title('FFT allpass (lp+bp+hp) filter output y[n].')
+legend({'x' 'y all'})
 %%
 figure('Name','lp+bp FFT')
-plotFFT(x);
 plotFFT(y_LB);
+plotFFT(x);
+legend({'filt output' 'x'})
 % plotsig(y_hp);
 title('FFT expanded lp (lp+bp) filter output y[n].')
 
@@ -140,14 +150,16 @@ plotFFT(y_bp);
 title('FFT expanded lp (lp+bp) filter output y[n].')
 
 figure('Name','lp+hp FFT')
-plotFFT(x);
 plotFFT(y_LH);
+plotFFT(x);
 % plotsig(y_hp);
+legend({'filt output' 'x'})
 title('FFT bandstop (lp+hp) filter output y[n].')
 
 figure('Name','bp+hp FFT')
-plotFFT(x);
 plotFFT(y_BH);
+plotFFT(x);
+legend({'filt output' 'x'})
 % plotsig(y_hp);
 title('FFT extended highpass (bp+hp) filter output y[n].')
 
@@ -156,7 +168,27 @@ plotFFT(y_hp);
 plotFFT(y_bp);
 % plotsig(y_hp);
 title('FFT extended highpass (bp+hp) filter output 2 y[n].')
+%%
+%time domain of filters
+figure('Name','x[n] time')
+plottime(x,t);
+% plotsig(x);
+title('Input signal x[n], wgn.')
 
+figure('Name','lp time')
+plottime(y_lp,t);
+% plotsig(y_lp);
+title('Lowpass filter output y_1[n].')
+
+figure('Name','bp time')
+plottime(y_bp,t);
+% plotsig(y_bp);
+title('Bandpass filter output y_2[n].')
+
+figure('Name','hp time')
+plottime(y_hp,t);
+% plotsig(y_hp);
+title('Highpass filter output y_3[n].')
 %%
 function plotFFT(x)
     fs=8*1e3;

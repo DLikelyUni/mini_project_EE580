@@ -1,4 +1,4 @@
-fid = fopen('.\data_ab.h','w');
+fid = fopen('.\data_ab2.h','w');
 %% Lowpass
 %% B
 fprintf(fid,['#define N_LOWPASS_B %d' char([13 10])], length(b_lp));

@@ -32,13 +32,43 @@ y_all=y_lp+y_bp+y_hp;
 y_LB=y_lp+y_bp;
 y_LH=y_lp+y_hp;
 y_BH=y_bp+y_hp;
+%% save to data.h
+[b_lp,a_lp]=sos2tf(lp.SOS,lp.G);
+[b_bp,a_bp]=sos2tf(bp.SOS,bp.G);
+[b_hp,a_hp]=sos2tf(hp.SOS,hp.G);
+b_lp=single(b_lp);
+a_lp=single(a_lp);
+[sos2,g2]=tf2sos(b_,hp.G);
+% b_lp2=lp.SOSq(:,1:3);
+% a_lp2=lp.SOSq(:,5:6);
+
+% save_data;
+%% pz plots of filter coefficients
+figure('Name','PZ plot of lp coeffs');
+zplane(b_lp, a_lp);
+title('Pole-Zero Plot from Coefficients');
+grid on;
+%%
+figure('Name','PZ plot of bp coeffs');
+zplane(b_bp, a_bp);
+title('Pole-Zero Plot from Coefficients');
+grid on;
+
+figure('Name','PZ plot of hp  coeffs');
+zplane(b_hp, a_hp);
+title('Pole-Zero Plot from Coefficients');
+grid on;
+%%
+y_lp=filter(b_lp,a_lp,x);
+y_bp=filter(b_bp,a_bp,x);
+y_hp=filter(b_hp,a_hp,x);
 
 %% magnitude-phase plots
 Hlp = dfilt.df2sos(lp.SOSq,lp.Gq);
 Hbp = dfilt.df2sos(bp.SOSq,bp.Gq);
 Hhp = dfilt.df2sos(hp.SOSq,hp.Gq);
 %%
-fvtool(Hlp);
+% fvtool(Hlp);
 % fvtool(Hbp);
 % fvtool(Hhp);
 %% plot pole zeros
@@ -52,12 +82,12 @@ normB=(B-min(X))/(max(X)-min(X));
 normX=(X-min(X))/(max(X)-min(X));
 fs=8*1e3;
 
-figure('Name','normalised frequency plot of signal')
-plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),normX)
-hold on;
-plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),normB)
-title('Normalised error value in reconstruction of signal')
-ylabel('percentage')
+% figure('Name','normalised frequency plot of signal')
+% plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),normX)
+% hold on;
+% plot(fs*(0:(1/length(x)):(length(x)-1)/length(x)),normB)
+% title('Normalised error value in reconstruction of signal')
+% ylabel('percentage')
 
 errorpercent=max(normB)*100;
 %% figures 
@@ -95,7 +125,7 @@ title('FFT allpass (lp+bp+hp) filter output y[n].')
 
 % freq plots for report
 figure('Name','lp FFT')
-plotFFT(x);
+% plotFFT(x);
 plotFFT(y_lp);
 % plotsig(y_lp);
 title('FFT Lowpass filter output y_1[n].')
@@ -107,14 +137,14 @@ plotFFT(y_bp);
 title('FFT Bandpass filter output y_2[n].')
 
 figure('Name','hp FFT')
-plotFFT(x);
+% plotFFT(x);
 plotFFT(y_hp);
 % plotsig(y_hp);
 title('FFT Highpass filter output y_3[n].')
 %% combined filters
-figure('Name','all FFT')
-plotFFT(y);
-plot(B);
+figure('Name','all FFT 2')
+plotFFT(x);
+plotFFT(y_all);
 % plotsig(y_hp);
 title('FFT allpass (lp+bp+hp) filter output y[n].')
 %%

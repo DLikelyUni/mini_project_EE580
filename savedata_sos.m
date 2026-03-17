@@ -1,4 +1,4 @@
-fid = fopen('.\data_sos_arr.h','w');
+fid = fopen('.\data_sos_arr2.h','w');
 %% Lowpass 
 sos=lp.SOSq;G=lp.Gq;
 %% sos

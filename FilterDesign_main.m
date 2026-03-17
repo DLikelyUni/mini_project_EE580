@@ -13,27 +13,27 @@ x=wgn(10000,1,0);
 % a_lp=[a_lp zpad];
 % b_lp=[b_lp zpad];
 %%
+% lowpass.SOS=SOS_lp;
+% lowpass.G=G_lp;
+bandpass.SOS=SOS_bp;
+bandpass.G=G_bp;
+% highpass.SOS=SOS_hp;
+% highpass.G=G_hp;
+
+% save("lowpass3.mat","-struct","lowpass")
+save("bandpass3.mat","-struct","bandpass")
+% save("highpass4.mat","-struct","highpass")
+%%
 % lowpass.SOS=SOS_lp2;
 % lowpass.G=G_lp2;
+% save("lowpass_t.mat","-struct","lowpass")
+% %%
 % bandpass.SOS=SOS_bp2;
 % bandpass.G=G_bp2;
-% highpass.SOS=SOS_hp2;
-% highpass.G=G_hp2;
-% 
-% save("lowpass2.mat","-struct","lowpass")
-% save("bandpass2.mat","-struct","bandpass")
-% save("highpass2.mat","-struct","highpass")
-%%
-lowpass.SOS=SOS_lp2;
-lowpass.G=G_lp2;
-save("lowpass_t.mat","-struct","lowpass")
-%%
-bandpass.SOS=SOS_bp2;
-bandpass.G=G_bp2;
-save("bandpass_t.mat","-struct","bandpass")
-%%
-highpass.SOS=SOS_hp2;highpass.G=G_hp2;
-save("highpass_t.mat","-struct","highpass")
+% save("bandpass_t.mat","-struct","bandpass")
+% %%
+% highpass.SOS=SOS_hp2;highpass.G=G_hp2;
+% save("highpass_t.mat","-struct","highpass")
 %%
 [z,p,~]=sos2zp(SOS_lp,G_lp);
 
