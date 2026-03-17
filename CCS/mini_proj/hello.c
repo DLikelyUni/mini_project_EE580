@@ -30,12 +30,13 @@
 #define BIT6 0x40
 #define BIT7 0x80
 
-#define BUFFLEN 64
+#define BUFFLEN 32768
 
 
-int16_t s16;
-float sampBuffer[BUFFLEN] = {0};
+int16_t sampBuffer[BUFFLEN] = {0};
 uint16_t buff_idx_ptr = 0;
+volatile int16_t s16;
+volatile int16_t y16 = 0;
 
 /*
  *  ======== main ========
@@ -70,18 +71,38 @@ void dipPRD(void){
 
 void processSamp(void){
 
-    do {
-        SEM_pend(&sem, SYS_FOREVER);
-        uint16_t sample = s16;
-        sampBuffer[buff_idx_ptr] = sample;
-        buff_idx_ptr = (buff_idx_ptr++ & BUFFLEN);
-    } while(1);
+
+    buff_idx_ptr = (buff_idx_ptr++ & BUFFLEN);
+
+    uint32_t dip_status;
+    DIP_getAll(&dip_status);
+    uint32_t mask = (BIT0 | BIT1);
+
+    uint32_t dip_val = dip_status & mask;
+
+    switch (dip_val){
+    case 1:
+        sampBuffer[buff_idx_ptr] = s16;
+        y16 = s16;
+        break;
+    case 3:
+        y16 = sampBuffer[buff_idx_ptr];
+        break;
+    default:
+        y16 = 0;
+        break;
+    }
+
+
 
 }
 
 void audioHWI(void){
 
+    //volatile int16_t s16;
     s16 = read_audio_sample();
-    SEM_post(&sem);
+    write_audio_sample(y16);
+    SWI_post(&SWI0);
+
 }
 

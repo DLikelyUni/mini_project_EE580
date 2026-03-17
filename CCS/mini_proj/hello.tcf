@@ -91,6 +91,17 @@ bios.TSK.create("TSK0");
 bios.TSK.instance("TSK0").order = 1;
 bios.TSK.instance("TSK0").fxn = prog.extern("processSamp");
 bios.SEM.create("sem");
+bios.TSK.instance("TSK0").priority = 13;
+bios.SWI.instance("PRD_swi").order = 1;
+bios.SWI.instance("KNL_swi").order = 2;
+bios.SWI.instance("PWRM_loadSwi").order = 3;
+bios.TSK.instance("TSK_idle").order = 1;
+bios.TSK.instance("TSK0").destroy();
+bios.SWI.create("SWI0");
+bios.SWI.instance("SWI0").order = 5;
+bios.SWI.instance("SWI0").fxn = prog.extern("processSamp");
+bios.SWI.instance("SWI0").priority = 1;
+bios.SWI.instance("SWI0").priority = 2;
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {
