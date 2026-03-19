@@ -21,6 +21,8 @@
 
 #include "framework.h"
 
+#include "data_IIR.h"
+
 #define BIT0 0x01
 #define BIT1 0x02
 #define BIT2 0x04
@@ -41,10 +43,10 @@
 #define BP_OUT BIT6
 #define HP_OUT BIT7
 #define LP_BP_OUT (LP_OUT | BP_OUT)
-#define LP_HP_OUT (LP_OUT | BP_OUT)
+#define LP_HP_OUT (LP_OUT | HP_OUT)
 #define BP_HP_OUT (BP_OUT | HP_OUT)
 #define LP_BP_HP_OUT (LP_OUT | BP_OUT | HP_OUT)
-#define MASK_FILT HP_BP_LP_OUT
+#define MASK_FILT LP_BP_HP_OUT
 
 
 int16_t sampBuffer[BUFFLEN] = {0};
@@ -92,15 +94,15 @@ void dipPRD(void){
 
 }
 
-static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t iir_idx_ptr, float *iir_a_coef, float *iir_b_coef){
+static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t iir_idx_ptr, float *iir_a_coef, float *iir_b_coef, int filt_len){
     int i;
     uint8_t idx = iir_idx_ptr;
     float sum = 0;
-    for(i = 0; i++; i < IIR_B_LEN){
+    for(i = 0; i < filt_len; i++){
         sum += (float)iir_x_buff[idx]*iir_a_coef[i];
         sum += iir_y_buff[idx]*iir_b_coef[i];
         idx--;
-        idx &= (IIR_B_LEN-1);
+        idx &= (filt_len-1);
     }
     return(sum);
 }
@@ -114,12 +116,12 @@ void processSamp(void){
     DIP_getAll(&dip_status);
     //uint32_t mask = (BIT0 | BIT1);
 
-    uint32_t playback_mode = dip_status & PLAYBACK_MASK;
+    uint32_t playback_mode = dip_status & MASK_PLAYBACK;
     uint32_t filter_sel = dip_status & MASK_FILT;
 
-    float y_lp = 0;
+    /*float y_lp = 0;
     float y_bp = 0;
-    float y_hp = 0;
+    float y_hp = 0;*/
 
     switch (playback_mode){
     case REC_LOOPBACK:
@@ -130,9 +132,9 @@ void processSamp(void){
         //y16 = sampBuffer[buff_idx_ptr];
         iir_x_buff[iir_idx_ptr] = sampBuffer[buff_idx_ptr];
 
-        lp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, lp_y_buff, iir_idx_ptr, a_lp, b_lp);
-        bp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, bp_y_buff, iir_idx_ptr, a_bp, b_bp);
-        hp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, hp_y_buff, iir_idx_ptr, a_hp, b_hp);
+        lp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, lp_y_buff, iir_idx_ptr, a_lp, b_lp, N_LOWPASS_B);
+        bp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, bp_y_buff, iir_idx_ptr, a_bp, b_bp, N_BANDPASS_B);
+        hp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, hp_y_buff, iir_idx_ptr, a_hp, b_hp, N_HIGHPASS_B);
 
         switch (filter_sel){
         case LP_OUT:
@@ -151,7 +153,7 @@ void processSamp(void){
             y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + hp_y_buff[iir_idx_ptr]);
             break;
         case LP_BP_HP_OUT:
-            y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + bp_y_buff[iir_dx_ptr] + hp_y_buff[iir_idx_ptr]);
+            y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + bp_y_buff[iir_idx_ptr] + hp_y_buff[iir_idx_ptr]);
             break;
         }
 
