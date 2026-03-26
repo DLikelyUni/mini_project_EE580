@@ -1,2 +1,3 @@
-2026/03/10-16:32:29.991 1614 Creating DB Z:\H\My_Documents\EE580\mini_project_EE580\CCS\.jxbrowser.userdata\Default\Local Storage\leveldb since it was missing.
-2026/03/10-16:32:36.460 1614 Reusing MANIFEST Z:\H\My_Documents\EE580\mini_project_EE580\CCS\.jxbrowser.userdata\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/26-21:10:42.778 1a84 Reusing MANIFEST Z:\H\My_Documents\EE580\mini_project_EE580\CCS\.jxbrowser.userdata\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/26-21:10:43.442 1a84 Recovering log #3
+2026/03/26-21:10:44.010 1a84 Reusing old log Z:\H\My_Documents\EE580\mini_project_EE580\CCS\.jxbrowser.userdata\Default\Local Storage\leveldb/000003.log 
