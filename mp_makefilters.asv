@@ -4,13 +4,12 @@ function filt=mp_makefilters() %mini project make filters
     fc2=fs/3;
    
     % Low pass config 4
-    fp_shift=fs/400;
-    fs_shift=fs/80; 
+    fp_shift=fs/300; 
     fpasslp=fc1-fp_shift;
-    fstoplp=fc1+fs_shift;
+    fstoplp=fs/5;
     B=fstoplp-fpasslp;
     Astop=60;
-    Apass=0.125;
+    Apass=0.1;
     % d = designfilt('lowpassiir', ...
     %     'PassbandFrequency', fpasslp, 'StopbandFrequency', fstoplp, ...
     %     'PassbandRipple', Apass, 'StopbandAttenuation', Astop, ...
@@ -51,20 +50,10 @@ function filt=mp_makefilters() %mini project make filters
     config.fstopbp2 = fstopbp2;
 
     filt.config=config;
-    lowpass.b=single(blp);
-    lowpass.a= single(alp);
-    bandpass.b = single(bbp);
-    bandpass.a = single(abp);
-    highpass.b = single(bhp);
-    highpass.a = single(ahp);
-    % lowpass.b=blp;
-    % lowpass.a= alp;
-    % bandpass.b = bbp;
-    % bandpass.a = abp;
-    % highpass.b = bhp;
-    % highpass.a = ahp;
-
-    filt.lowpass = lowpass;
-    filt.bandpass = bandpass;
-    filt.highpass = highpass;
+    lowpass.b=blp;
+    lowpass.a= alp;
+    b.bbp = bbp;
+    filt.abp = abp;
+    filt.bhp = bhp;
+    filt.ahp = ahp;
 end

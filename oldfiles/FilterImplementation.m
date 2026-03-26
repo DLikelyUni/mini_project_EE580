@@ -4,11 +4,10 @@ clearvars;clc;
 L=10000;
 rng(1);
 x=wgn(L,1,0); %random noise signal
-
-fs=8*1e3;
-fc1=fs/6;
-fc2=fs/3;
-
+%
+% filt=mp_makefilters;
+%%
+fs=8000;
 t=((0:L-1)*(1/fs));
 t=t'*1e3;
 % load coefficients
@@ -43,27 +42,27 @@ y_BH=y_bp+y_hp;
 % b_lp=single(b_lp);
 % a_lp=single(a_lp);
 
-
+%%
 % save_data;
 % pz plots of filter coefficients
 figure('Name','PZ plot of lp coeffs');
-zplane(b_lp, a_lp);
+zplane(blp, alp);
 title('Pole-Zero Plot from Coefficients');
 grid on;
 
 figure('Name','PZ plot of bp coeffs');
-zplane(b_bp, a_bp);
+zplane(bbp, abp);
 title('Pole-Zero Plot from Coefficients');
 grid on;
 
 figure('Name','PZ plot of hp  coeffs');
-zplane(b_hp, a_hp);
+zplane(bhp, ahp);
 title('Pole-Zero Plot from Coefficients');
 grid on;
 %%
-y_lp=filter(b_lp,a_lp,x);
-y_bp=filter(b_bp,a_bp,x);
-y_hp=filter(b_hp,a_hp,x);
+y_lp=filter(blp,alp,x);
+y_bp=filter(bbp,abp,x);
+y_hp=filter(bhp,ahp,x);
 y_all=y_lp+y_bp+y_hp;
 
 
@@ -104,28 +103,48 @@ tiledlayout(2,1)
 nexttile
 plotFFT(x);
 title('FFT Input signal x[n], wgn.')
+hold on;
+yline(max(abs(fft(x))),'-b',{'max value x[n]'});
 nexttile
 plotFFT(y_all);
+xline(fpasslp,'-',{'lowpass', 'fpass'});
+xline(fstoplp,'-r',{'lowpass', 'fstop'});
+xline(fpasshp,'-',{'highpass', 'fpass'});
+xline(fstophp,'-r',{'highpass', 'fstop'});
+yline(max(abs(fft(x))),'-b',{'max value x[n]'});
+yline(mean(abs(fft(x))),'-r',{'mean value x[n]'});
+yline(mean(abs(fft(y_all))),'-m',{'mean value y[n]'});
 % plotsig(y_hp);
 title('FFT allpass (lp+bp+hp) filter output y[n].')
 %%
 
-% freq plots for report
+
+figure('Name','hp FFT')
+% plotFFT(x);
+plotFFT(y_hp)% freq plots for report
 figure('Name','lp FFT')
 % plotFFT(x);
 plotFFT(y_lp);
+hold on;
+xline(fpasslp,'-',{'lowpass', 'fpass'});
+xline(fstoplp,'-r',{'lowpass', 'fstop'});
 % plotsig(y_lp);
 title('FFT Lowpass filter output y_1[n].')
 %
 figure('Name','bp FFT')
 plotFFT(x);
 plotFFT(y_bp);
+hold on;
+xline(fpassbp1,'-k',{'fpass_{bp_1}'});
+xline(fstopbp1,'-r',{'fstop_{bp_1}'});
+xline(fpassbp2,'-k',{'fpass_{bp_2}'});
+xline(fstopbp2,'-r',{'fstop_{bp_2}'});
 % plotsig(y_bp);
 title('FFT Bandpass filter output y_2[n].')
-
-figure('Name','hp FFT')
-% plotFFT(x);
-plotFFT(y_hp);
+%%;
+hold on;
+xline(fpasshp,'-',{'highpass', 'fpass'});
+xline(fstophp,'-r',{'highpass', 'fstop'});
 % plotsig(y_hp);
 title('FFT Highpass filter output y_3[n].')
 %% combined filters
@@ -137,29 +156,48 @@ title('FFT allpass (lp+bp+hp) filter output y[n].')
 legend({'x' 'y all'})
 %%
 figure('Name','lp+bp FFT')
-plotFFT(y_LB);
 plotFFT(x);
-legend({'filt output' 'x'})
+plotFFT(y_LB);
+hold on;
+legend({'x' 'filt output'})
 % plotsig(y_hp);
+xline(fpassbp1,'-b',{'fpass_{bp_1}'});
+xline(fstopbp1,'-b',{'fstop_{bp_1}'});
+% xline(fpassbp2,'-m',{'fpass_{bp_2}'});
+% xline(fstopbp2,'-m',{'fstop_{bp_2}'});
+xline(fpasslp,'-m',{'fpass_{lp}'});
+xline(fstoplp,'-m',{'fstop_{lp}'});
 title('FFT expanded lp (lp+bp) filter output y[n].')
 
 figure('Name','lp+bp 2 FFT')
 plotFFT(y_lp);
 plotFFT(y_bp);
+hold on;
+xline(fpassbp1,'-b',{'fpass_{bp_1}'});
+xline(fstopbp1,'-b',{'fstop_{bp_1}'});
+xline(fpasslp,'-m',{'fpass_{lp}'});
+xline(fstoplp,'-m',{'fstop_{lp}'});
 % plotsig(y_hp);
 title('FFT expanded lp (lp+bp) filter output y[n].')
 
 figure('Name','lp+hp FFT')
-plotFFT(y_LH);
 plotFFT(x);
+plotFFT(y_LH);
 % plotsig(y_hp);
-legend({'filt output' 'x'})
+legend({'x' 'filt output'})
 title('FFT bandstop (lp+hp) filter output y[n].')
 
 figure('Name','bp+hp FFT')
-plotFFT(y_BH);
 plotFFT(x);
-legend({'filt output' 'x'})
+plotFFT(y_BH);
+hold on;
+xline(fpassbp2,'-b',{'fpass_{bp_2}'});
+xline(fstopbp2,'-b',{'fstop_{bp_2}'});
+% xline(fpassbp2,'-m',{'fpass_{bp_2}'});
+% xline(fstopbp2,'-m',{'fstop_{bp_2}'});
+xline(fpasshp,'-g',{'fpass_{hp}'});
+xline(fstophp,'-g',{'fstop_{hp}'});
+legend({'x' 'filt output'})
 % plotsig(y_hp);
 title('FFT extended highpass (bp+hp) filter output y[n].')
 

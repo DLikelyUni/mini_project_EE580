@@ -5,7 +5,7 @@ fc1=fs/6;
 fc2=fs/3;
 x=wgn(10000,1,0);
 
-
+filt=mp_makefilters;
 %% low pass
 [b_lp,a_lp]=sos2tf(lp.SOS,lp.G);
 [sos,g]=tf2sos(b_lp,a_lp);
@@ -13,16 +13,16 @@ x=wgn(10000,1,0);
 % a_lp=[a_lp zpad];
 % b_lp=[b_lp zpad];
 %%
-% lowpass.SOS=SOS_lp;
-% lowpass.G=G_lp;
+lowpass.SOS=SOS_lp;
+lowpass.G=G_lp;
 bandpass.SOS=SOS_bp;
 bandpass.G=G_bp;
-% highpass.SOS=SOS_hp;
-% highpass.G=G_hp;
+highpass.SOS=SOS_hp;
+highpass.G=G_hp;
 
-% save("lowpass3.mat","-struct","lowpass")
-save("bandpass3.mat","-struct","bandpass")
-% save("highpass4.mat","-struct","highpass")
+save("lowpass4.mat","-struct","lowpass")
+save("bandpass4.mat","-struct","bandpass")
+save("highpass4.mat","-struct","highpass")
 %%
 % lowpass.SOS=SOS_lp2;
 % lowpass.G=G_lp2;

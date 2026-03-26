@@ -9,7 +9,7 @@ t=((0:L-1)*(1/fs));
 t=t'*1e3;
 % read in filters
 filt=mp_makefilters;
-%%
+
 % filter signal
 y_lp=filter(filt.lowpass.b,filt.lowpass.a,x);
 y_bp=filter(filt.bandpass.b,filt.bandpass.a,x);
@@ -28,41 +28,6 @@ normB=(B-min(X))/(max(X)-min(X));
 normX=(X-min(X))/(max(X)-min(X));
 % normdiff=normX-normB;
 errorpercent=max(normB)*100;
-%% test audio
-load handel.mat
-
-filename = 'handel.wav';
-audiowrite(filename,y,Fs);
-clear y Fs
-%% Impulse responses
-% figure('Name','LP Impulse Response')
-% Plot the impulse response of the lowpass filter
-impulseResponse=impz(filt.lowpass.b, filt.lowpass.a,200);
-figure('Name','Lowpass Filter Impulse Response');
-stem(impulseResponse);
-title('Impulse Response of Lowpass Filter');
-xlabel('Samples');
-ylabel('Amplitude');
-grid on;
-
-% figure('Name','BP Impulse Response')
-impulseResponse = impz(filt.bandpass.b, filt.bandpass.a,200);
-figure('Name','Bandpass Filter Impulse Response');
-stem(impulseResponse);
-title('Impulse Response of Bandpass Filter');
-xlabel('Samples');
-ylabel('Amplitude');
-grid on;
-
-% figure('Name','HP Impulse Response')
-impulseResponse = impz(filt.highpass.b, filt.highpass.a,200);
-figure('Name','Highpass Filter Impulse Response');
-stem(impulseResponse);
-title('Impulse Response of Highpass Filter');
-xlabel('Samples');
-ylabel('Amplitude');
-grid on;
-
 
 %% frequency domain plot x vs allpass y tiled
 figure('Name','x v y FFT')
@@ -114,43 +79,21 @@ xline(filt.config.fstophp,'-r',{'highpass', 'fstop'});
 title('FFT Highpass filter output y_3[n].')
 %% combined filters
 figure('Name','all FFT 2')
-% plotFFT(y_all);
+plotFFT(y_all);
 plotFFT(x);
 hold on;
-grid on;
-xline(fs/6,'--r',{'f_{c_1}'});
-xline(fs/3,'--r',{'f_{c_2}'});
+xline(fs/6,'--m',{'f_{c_1}'});
+xline(fs/3,'--m',{'f_{c_2}'});
 % plotsig(y_hp);
-title('|FFT x[n]|, unfiltered signal .')
-% legend({'y all' 'x'})
+title('FFT allpass (lp+bp+hp) filter output y[n].')
+legend({'y all' 'x'})
 
 figure('Name','all FFT 3')
 plotFFT(x);
 plotFFT(y_all);
 hold on;
-% xline(fs/6,'--m',{'f_{c_1}'});
-% xline(fs/3,'--m',{'f_{c_2}'});
-% plotsig(y_hp);
-title('FFT allpass (lp+bp+hp) filter output y[n].')
-legend({'x' 'y all'})
-%%
-%% combined filters time
-figure('Name','all time')
-plottime(y_all,t);
-plottime(x,t);
-hold on;
-% xline(fs/6,'--m',{'f_{c_1}'});
-% xline(fs/3,'--m',{'f_{c_2}'});
-% plotsig(y_hp);
-title('FFT allpass (lp+bp+hp) filter output y[n].')
-legend({'y all' 'x'})
-
-figure('Name','all time2')
-plottime(x,t);
-plottime(y_all,t);
-hold on;
-% xline(fs/6,'--m',{'f_{c_1}'});
-% xline(fs/3,'--m',{'f_{c_2}'});
+xline(fs/6,'--b',{'f_{c_1}'});
+xline(fs/3,'--b',{'f_{c_2}'});
 % plotsig(y_hp);
 title('FFT allpass (lp+bp+hp) filter output y[n].')
 legend({'x' 'y all'})
@@ -210,22 +153,22 @@ title('FFT extended highpass (bp+hp) filter output 2 y[n].')
 %% pz plots of filter coefficients
 figure('Name','PZ plot of lp coeffs');
 zplane(filt.lowpass.b, filt.lowpass.a);
-title('Pole-Zero Plot low-pass: Double');
+title('Pole-Zero Plot from Coefficients');
 grid on;
 
 figure('Name','PZ plot of bp coeffs');
 zplane(filt.bandpass.b, filt.bandpass.a);
-title('Pole-Zero Plot band-pass: Double');
+title('Pole-Zero Plot from Coefficients');
 grid on;
 
 figure('Name','PZ plot of hp  coeffs');
 zplane(filt.highpass.b, filt.highpass.a);
-title('Pole-Zero Plot high-pass: Double');
+title('Pole-Zero Plot from Coefficients');
 grid on;
 %% magnitudephase plots - lowpass
-[h,w] = freqz(filt.bandpass.b,filt.bandpass.a);
+[h,w] = freqz(filt.lowpass.b,filt.lowpass.a);
 magnitude=abs(h);
-phase=unwrap(angle(h));
+phase=angle(h);
 
 figure;
 subplot(2,1,1);
@@ -236,7 +179,7 @@ xlabel('Normalized Frequency (\times\pi rad/sample)');
 
 subplot(2,1,2);
 plot(w/pi, phase);
-title('Unwrapped Phase Response');
+title('Phase Response');
 ylabel('Phase (radians)');
 xlabel('Normalized Frequency (\times\pi rad/sample)');
 %% functions

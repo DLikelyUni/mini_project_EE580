@@ -1,7 +1,9 @@
-fid = fopen('.\data_ab2.h','w');
+fid = fopen('.\data_IIR.h','w');
 %% Lowpass
 %% B
-fprintf(fid,['#define N_LOWPASS_B %d' char([13 10])], length(b_lp));
+b_lp=filt.lowpass.b;
+a_lp=filt.lowpass.a;
+fprintf(fid,['#define N_LOWPASS_B %dx' char([13 10])], length(b_lp));
 fwrite(fid,char([13 10]),'uchar');
 
 fwrite(fid,'float b_lp[] = { ','uchar');
@@ -25,6 +27,8 @@ fwrite(fid,[' };' char([13 10])],'uchar');
 fwrite(fid,char([13 10]),'uchar');
 
 %% Bandpass
+b_bp=filt.bandpass.b;
+a_bp=filt.bandpass.a;
 %% B
 fprintf(fid,['#define N_BANDPASS_B %d' char([13 10])], length(b_bp));
 fwrite(fid,char([13 10]),'uchar');
@@ -50,6 +54,8 @@ fwrite(fid,[' };' char([13 10])],'uchar');
 fwrite(fid,char([13 10]),'uchar');
 
 %% Highpass FILTER
+b_hp=filt.highpass.b;
+a_hp=filt.highpass.a;
 %% B
 fprintf(fid,['#define N_HIGHPASS_B %d' char([13 10])], length(b_hp));
 fwrite(fid,char([13 10]),'uchar');
