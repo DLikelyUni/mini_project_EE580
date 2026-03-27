@@ -61,6 +61,7 @@ float hp_y_buff[IIR_B_LEN] = {0};
 uint8_t iir_idx_ptr = 0;
 
 uint32_t dip_status;
+volatile uint32_t dip_status_db;
 volatile uint32_t playback_mode;
 volatile uint32_t filter_sel;
 volatile int16_t s16;
@@ -86,29 +87,78 @@ void main(void)
             b_bp[i] = b_bp[i] / 2;
     }
 
+    //SWI_post(&SWI0);
+
     /* fall into DSP/BIOS idle loop */
     return;
 }
 
-void dipPRD(void){
+// 20Hz LED toggle PRD
+void loopbackLED(void){
 
-    DIP_getAll(&dip_status);
-    uint32_t mask =  (BIT0 | BIT1 | BIT5 | BIT6 | BIT7);
 
-    if (dip_status == mask){
+
+    switch (playback_mode){
+    case REC_LOOPBACK:
         LED_toggle(LED_1);
-        LED_turnOff(LED_2);
-    } else {
         LED_toggle(LED_2);
+        break;
+    case 0:
         LED_turnOff(LED_1);
+        LED_turnOff(LED_2);
+        break;
+    default:
+        /* do nothing */
+        break;
     }
-        //uint32_t mask = (BIT0 | BIT1);
+    //SWI_post(&SWI0);
+    DIP_getAll(&dip_status);
 
-    playback_mode = dip_status & MASK_PLAYBACK;
-    filter_sel = dip_status & MASK_FILT;
-
+        if (dip_status == dip_status_db){
+            playback_mode = dip_status & MASK_PLAYBACK;
+            filter_sel = dip_status & MASK_FILT;
+        }
+        dip_status_db = dip_status;
 
 }
+
+// 6Hz LED toggle PRD
+void filterLED(void){
+
+    if ( playback_mode == PLAYBACK_BUFF ){
+    switch (filter_sel){
+    case 0:
+        LED_turnOff(LED_2);
+        break;
+    default:
+        LED_toggle(LED_2);
+        break;
+    }
+    } else {
+        /* do nothing */
+    }
+    //
+}
+
+// 2Hz LED toggle PRD
+void bufferLED(void){
+
+    if ( playback_mode == PLAYBACK_BUFF ){
+        LED_toggle(LED_1);
+        switch (filter_sel){
+        case 0:
+            LED_turnOff(LED_2);
+            break;
+        default:
+            /* do nothing */
+            break;
+        }
+    } else {
+        /* do nothing */
+    }
+
+}
+
 
 static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t iir_idx_ptr, float *iir_a_coef, float *iir_b_coef, int filt_len){
     int i;
@@ -124,7 +174,7 @@ static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t i
     return(sum);
 }
 
-void processSamp(void){
+void getDIP(void){
 
 
 
@@ -138,6 +188,8 @@ void audioHWI(void){
     //volatile int16_t y16 = 0;
 
     s16 = read_audio_sample();
+    playback_mode = dip_status & MASK_PLAYBACK;
+    filter_sel = dip_status & MASK_FILT;
 
 
 
@@ -204,6 +256,8 @@ void audioHWI(void){
 
 
     write_audio_sample(y16);
+
+
 
 }
 
