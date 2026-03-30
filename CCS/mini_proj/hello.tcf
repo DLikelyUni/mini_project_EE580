@@ -119,6 +119,7 @@ bios.PRD.instance("PRD0").order = 5;
 bios.PRD.instance("PRD0").period = 50;
 bios.PRD.instance("PRD0").fxn = prog.extern("dipPRD");
 bios.PRD.instance("PRD0").fxn = prog.extern("loopbackLED");
+bios.SWI.instance("SWI0").destroy();
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {

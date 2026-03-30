@@ -23,6 +23,10 @@
 
 #include "data_IIR.h"
 
+#include <time.h>
+
+#include <clk.h>
+
 #define BIT0 0x01
 #define BIT1 0x02
 #define BIT2 0x04
@@ -34,7 +38,7 @@
 
 #define BUFFLEN  0x8000
 #define IIR_A_LEN 16
-#define IIR_B_LEN 16
+#define IIR_B_LEN 32
 
 #define REC_LOOPBACK BIT0
 #define PLAYBACK_BUFF (BIT0 | BIT1)
@@ -48,27 +52,46 @@
 #define LP_BP_HP_OUT (LP_OUT | BP_OUT | HP_OUT)
 #define MASK_FILT LP_BP_HP_OUT
 
+#undef CLOCKS_PER_SEC
+#define CLOCKS_PER_SEC (300000000)
+extern cregister volatile unsigned int TSCL;
+extern cregister volatile unsigned int TSCH;
+
+extern LOG_Obj trace;
+
 
 int16_t sampBuffer[BUFFLEN] = {0};
 volatile uint32_t buff_idx_ptr = 0;
 
-int16_t iir_x_buff[IIR_A_LEN] = {0};
+int16_t iir_x_buff[IIR_B_LEN] = {0};
 
-float lp_y_buff[IIR_B_LEN] = {0};
-//float bp_y_buff[IIR_B_LEN] = {0};
-float hp_y_buff[IIR_B_LEN] = {0};
+float lp_y_buff[IIR_A_LEN] = {0};
+float bp_y_buff[IIR_B_LEN] = {0};
+float hp_y_buff[IIR_A_LEN] = {0};
 
 uint8_t iir_idx_ptr = 0;
 
-uint32_t dip_status;
-volatile uint32_t dip_status_db;
-volatile uint32_t playback_mode;
-volatile uint32_t filter_sel;
 volatile int16_t s16;
 volatile int16_t y16;
+//clock_t start_t, end_t;
 /*
  *  ======== main ========
  */
+
+void dip_vals(uint32_t *playback_mode, uint32_t *filter_sel){
+    uint32_t dip_status;
+    DIP_getAll(&dip_status);
+    *playback_mode = dip_status & MASK_PLAYBACK;
+    *filter_sel = dip_status & MASK_FILT;
+}
+
+clock_t clock(){
+    unsigned int low = TSCL;
+    unsigned int high = TSCH;
+    if (high) return (clock_t)-1;
+    return low;
+}
+
 void main(void)
 {
     LOG_printf(&trace, "hello world!");
@@ -96,7 +119,9 @@ void main(void)
 // 20Hz LED toggle PRD
 void loopbackLED(void){
 
-
+    uint32_t playback_mode;
+    uint32_t filter_sel;
+    dip_vals(&playback_mode, &filter_sel);
 
     switch (playback_mode){
     case REC_LOOPBACK:
@@ -111,19 +136,13 @@ void loopbackLED(void){
         /* do nothing */
         break;
     }
-    //SWI_post(&SWI0);
-    DIP_getAll(&dip_status);
-
-        if (dip_status == dip_status_db){
-            playback_mode = dip_status & MASK_PLAYBACK;
-            filter_sel = dip_status & MASK_FILT;
-        }
-        dip_status_db = dip_status;
 
 }
 
 // 6Hz LED toggle PRD
 void filterLED(void){
+    uint32_t playback_mode, filter_sel;
+    dip_vals(&playback_mode, &filter_sel);
 
     if ( playback_mode == PLAYBACK_BUFF ){
     switch (filter_sel){
@@ -142,6 +161,8 @@ void filterLED(void){
 
 // 2Hz LED toggle PRD
 void bufferLED(void){
+    uint32_t playback_mode, filter_sel;
+    dip_vals(&playback_mode, &filter_sel);
 
     if ( playback_mode == PLAYBACK_BUFF ){
         LED_toggle(LED_1);
@@ -160,11 +181,13 @@ void bufferLED(void){
 }
 
 
+
 static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t iir_idx_ptr, float *iir_a_coef, float *iir_b_coef, int filt_len){
     int i;
     uint8_t idx = iir_idx_ptr;
     float sum = 0;
-#pragma UNROLL(16)
+    #pragma UNROLL(16)
+    #pragma MUST_ITERATE(,,16)
     for(i = 0; i < filt_len; i++){
         sum += (float)iir_x_buff[idx]*iir_a_coef[i];
         sum += iir_y_buff[idx]*iir_b_coef[i];
@@ -174,12 +197,8 @@ static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t i
     return(sum);
 }
 
-void getDIP(void){
 
 
-
-
-}
 
 void audioHWI(void){
 
@@ -188,8 +207,9 @@ void audioHWI(void){
     //volatile int16_t y16 = 0;
 
     s16 = read_audio_sample();
-    playback_mode = dip_status & MASK_PLAYBACK;
-    filter_sel = dip_status & MASK_FILT;
+    uint32_t playback_mode, filter_sel;
+    dip_vals(&playback_mode, &filter_sel);
+    clock_t start_t, end_t;
 
 
 
@@ -202,38 +222,40 @@ void audioHWI(void){
 
     if(MCASP->RSLOT){
         //SWI_post(&SWI0);
+
         switch (playback_mode){
                 case REC_LOOPBACK:
                     sampBuffer[buff_idx_ptr] = s16;
                     y16 = s16;
                     break;
                 case PLAYBACK_BUFF:
-                    //y16 = sampBuffer[buff_idx_ptr];
+                    start_t = clock();
+
                     iir_x_buff[iir_idx_ptr] = sampBuffer[buff_idx_ptr];
 
-                    //lp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, lp_y_buff, iir_idx_ptr, a_lp, b_lp, N_LOWPASS_B);
-                    //bp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, bp_y_buff, iir_idx_ptr, a_bp, b_bp, N_BANDPASS_B);
+                    lp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, lp_y_buff, iir_idx_ptr, a_lp, b_lp, N_LOWPASS_B);
+                    bp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, bp_y_buff, iir_idx_ptr, a_bp, b_bp, N_BANDPASS_B);
                     hp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, hp_y_buff, iir_idx_ptr, a_hp, b_hp, N_HIGHPASS_B);
 
                     switch (filter_sel){
                     case LP_OUT:
                         y16 = (int16_t)lp_y_buff[iir_idx_ptr];
                         break;
-                    /*case BP_OUT:
+                    case BP_OUT:
                         y16 = (int16_t)bp_y_buff[iir_idx_ptr];
                         break;
                     case LP_BP_OUT:
                         y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + bp_y_buff[iir_idx_ptr]);
-                        break;*/
+                        break;
                     case HP_OUT:
                         y16 = (int16_t)hp_y_buff[iir_idx_ptr];
                         break;
                     case LP_HP_OUT:
                         y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + hp_y_buff[iir_idx_ptr]);
                         break;
-                    /*case LP_BP_HP_OUT:
+                    case LP_BP_HP_OUT:
                         y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + bp_y_buff[iir_idx_ptr] + hp_y_buff[iir_idx_ptr]);
-                        break;*/
+                        break;
                     default:
                         y16 = sampBuffer[buff_idx_ptr];
 
@@ -242,6 +264,9 @@ void audioHWI(void){
 
                     iir_idx_ptr++;
                     iir_idx_ptr &= (IIR_B_LEN-1);
+                    end_t = clock();
+                    LOG_printf(&trace, "Ticks: %d\n", (end_t - start_t));
+                    //SWI_post(&SWI0);
                     break;
                 default:
                     y16 = 0;
@@ -250,6 +275,7 @@ void audioHWI(void){
                 buff_idx_ptr++;
 
                 buff_idx_ptr &= (BUFFLEN-1);
+
     } else {
         y16 = 0;
     }
