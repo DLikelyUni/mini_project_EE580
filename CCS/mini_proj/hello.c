@@ -73,7 +73,9 @@ float hp_y_buff[IIR_A_LEN] = {0};
 uint8_t iir_idx_ptr_16 = 0;
 uint8_t iir_idx_ptr_32 = 0;
 
-float graph_vals[1024] = {0};
+int16_t output[1024] = {0};
+
+
 
 volatile int16_t s16;
 volatile int16_t y16;
@@ -91,7 +93,6 @@ volatile int16_t y16;
 volatile uint32_t playback_mode = 0;
 volatile uint32_t filter_sel = 0;
 
-int vals_index = 0;
 
 clock_t clock(){
     unsigned int low = TSCL;
@@ -216,8 +217,8 @@ static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t i
     #pragma UNROLL(16)
     #pragma MUST_ITERATE(,,16)
     for(i = 0; i < filt_len; i++){
-        sum += (float)iir_x_buff[idx]*iir_b_coef[i];
-        sum += iir_y_buff[idx]*iir_a_coef[i];
+        sum += (float)iir_x_buff[idx]*iir_a_coef[i];
+        sum -= iir_y_buff[idx]*iir_b_coef[i];
         idx--;
         idx &= (filt_len-1);
     }
@@ -250,6 +251,7 @@ void audioHWI(void){
     /*float y_lp = 0;
     float y_bp = 0;
     float y_hp = 0;*/
+    uint32_t outcount;
 
 
 
@@ -270,6 +272,10 @@ void audioHWI(void){
                     lp_y_buff[iir_idx_ptr_16] = iir_filt(iir_x_buff_16, lp_y_buff, iir_idx_ptr_16, a_lp, b_lp, N_LOWPASS_B);
                     bp_y_buff[iir_idx_ptr_32] = iir_filt(iir_x_buff_32, bp_y_buff, iir_idx_ptr_32, a_bp, b_bp, N_BANDPASS_B);
                     hp_y_buff[iir_idx_ptr_16] = iir_filt(iir_x_buff_16, hp_y_buff, iir_idx_ptr_16, a_hp, b_hp, N_HIGHPASS_B);
+
+
+
+
 
                     switch (filter_sel){
                     case LP_OUT:
@@ -292,14 +298,12 @@ void audioHWI(void){
                         break;
                     default:
                         y16 = sampBuffer[buff_idx_ptr];
-                        graph_vals[vals_index] = y16;
-                        vals_index++;
-                        if (vals_index >= 1024){
-                            vals_index = 0;
-                        }
+
 
                         break;
                     }
+                    outcount = buff_idx_ptr & 1023;
+                    output[outcount] = y16;
 
                     iir_idx_ptr_32++;
                     iir_idx_ptr_32 &= (IIR_B_LEN-1);
