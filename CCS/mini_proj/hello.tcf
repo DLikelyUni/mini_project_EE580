@@ -119,7 +119,14 @@ bios.PRD.instance("PRD0").order = 5;
 bios.PRD.instance("PRD0").period = 50;
 bios.PRD.instance("PRD0").fxn = prog.extern("dipPRD");
 bios.PRD.instance("PRD0").fxn = prog.extern("loopbackLED");
-bios.SWI.instance("SWI0").destroy();
+//bios.SWI.instance("SWI0").destroy();
+bios.SWI.instance("PRD_swi").priority = 2;
+//bios.SWI.instance("SWI0").priority = 2;
+//bios.SWI.create("SWI0");
+//bios.SWI.instance("SWI0").order = 5;
+//bios.SWI.instance("SWI0").priority = 2;
+//bios.SWI.instance("SWI0").fxn = prog.extern("getDIP");
+//bios.SWI.instance("PRD_swi").priority = 1;
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {

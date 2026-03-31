@@ -63,13 +63,17 @@ extern LOG_Obj trace;
 int16_t sampBuffer[BUFFLEN] = {0};
 volatile uint32_t buff_idx_ptr = 0;
 
-int16_t iir_x_buff[IIR_B_LEN] = {0};
+int16_t iir_x_buff_16[IIR_A_LEN] = {0};
+int16_t iir_x_buff_32[IIR_B_LEN] = {0};
 
 float lp_y_buff[IIR_A_LEN] = {0};
 float bp_y_buff[IIR_B_LEN] = {0};
 float hp_y_buff[IIR_A_LEN] = {0};
 
-uint8_t iir_idx_ptr = 0;
+uint8_t iir_idx_ptr_16 = 0;
+uint8_t iir_idx_ptr_32 = 0;
+
+float graph_vals[1024] = {0};
 
 volatile int16_t s16;
 volatile int16_t y16;
@@ -78,12 +82,16 @@ volatile int16_t y16;
  *  ======== main ========
  */
 
-void dip_vals(uint32_t *playback_mode, uint32_t *filter_sel){
+/*void dip_vals(uint32_t *playback_mode, uint32_t *filter_sel){
     uint32_t dip_status;
     DIP_getAll(&dip_status);
     *playback_mode = dip_status & MASK_PLAYBACK;
     *filter_sel = dip_status & MASK_FILT;
-}
+}*/
+volatile uint32_t playback_mode = 0;
+volatile uint32_t filter_sel = 0;
+
+int vals_index = 0;
 
 clock_t clock(){
     unsigned int low = TSCL;
@@ -119,9 +127,12 @@ void main(void)
 // 20Hz LED toggle PRD
 void loopbackLED(void){
 
-    uint32_t playback_mode;
-    uint32_t filter_sel;
-    dip_vals(&playback_mode, &filter_sel);
+
+    uint32_t dip_status;
+    DIP_getAll(&dip_status);
+    playback_mode = dip_status & MASK_PLAYBACK;
+    filter_sel = dip_status & MASK_FILT;
+    //dip_vals(&playback_mode, &filter_sel);
 
     switch (playback_mode){
     case REC_LOOPBACK:
@@ -141,8 +152,11 @@ void loopbackLED(void){
 
 // 6Hz LED toggle PRD
 void filterLED(void){
-    uint32_t playback_mode, filter_sel;
-    dip_vals(&playback_mode, &filter_sel);
+    //uint32_t playback_mode, filter_sel;
+    //uint32_t playback_mode;
+    //uint32_t filter_sel;
+
+    //dip_vals(&playback_mode, &filter_sel);
 
     if ( playback_mode == PLAYBACK_BUFF ){
     switch (filter_sel){
@@ -161,8 +175,14 @@ void filterLED(void){
 
 // 2Hz LED toggle PRD
 void bufferLED(void){
-    uint32_t playback_mode, filter_sel;
-    dip_vals(&playback_mode, &filter_sel);
+    //uint32_t playback_mode;
+    //uint32_t filter_sel;
+    /*uint32_t dip_status;
+    DIP_getAll(&dip_status);
+    playback_mode = dip_status & MASK_PLAYBACK;
+    filter_sel = dip_status & MASK_FILT;*/
+    //uint32_t playback_mode, filter_sel;
+    //dip_vals(&playback_mode, &filter_sel);
 
     if ( playback_mode == PLAYBACK_BUFF ){
         LED_toggle(LED_1);
@@ -180,6 +200,13 @@ void bufferLED(void){
 
 }
 
+void getDIP(void){
+    uint32_t dip_status;
+    DIP_getAll(&dip_status);
+    playback_mode = dip_status & MASK_PLAYBACK;
+    filter_sel = dip_status & MASK_FILT;
+}
+
 
 
 static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t iir_idx_ptr, float *iir_a_coef, float *iir_b_coef, int filt_len){
@@ -189,8 +216,8 @@ static inline int16_t iir_filt(int16_t *iir_x_buff, float *iir_y_buff, uint8_t i
     #pragma UNROLL(16)
     #pragma MUST_ITERATE(,,16)
     for(i = 0; i < filt_len; i++){
-        sum += (float)iir_x_buff[idx]*iir_a_coef[i];
-        sum += iir_y_buff[idx]*iir_b_coef[i];
+        sum += (float)iir_x_buff[idx]*iir_b_coef[i];
+        sum += iir_y_buff[idx]*iir_a_coef[i];
         idx--;
         idx &= (filt_len-1);
     }
@@ -207,10 +234,16 @@ void audioHWI(void){
     //volatile int16_t y16 = 0;
 
     s16 = read_audio_sample();
-    uint32_t playback_mode, filter_sel;
-    dip_vals(&playback_mode, &filter_sel);
-    clock_t start_t, end_t;
+    //uint32_t playback_mode, filter_sel;
+    //dip_vals(&playback_mode, &filter_sel);
 
+    clock_t start_t, end_t;
+    /*uint32_t playback_mode;
+    uint32_t filter_sel;
+    uint32_t dip_status;
+    DIP_getAll(&dip_status);
+    playback_mode = dip_status & MASK_PLAYBACK;
+    filter_sel = dip_status & MASK_FILT;*/
 
 
 
@@ -231,39 +264,47 @@ void audioHWI(void){
                 case PLAYBACK_BUFF:
                     start_t = clock();
 
-                    iir_x_buff[iir_idx_ptr] = sampBuffer[buff_idx_ptr];
 
-                    lp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, lp_y_buff, iir_idx_ptr, a_lp, b_lp, N_LOWPASS_B);
-                    bp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, bp_y_buff, iir_idx_ptr, a_bp, b_bp, N_BANDPASS_B);
-                    hp_y_buff[iir_idx_ptr] = iir_filt(iir_x_buff, hp_y_buff, iir_idx_ptr, a_hp, b_hp, N_HIGHPASS_B);
+                    iir_x_buff_32[iir_idx_ptr_32] = sampBuffer[buff_idx_ptr];
+                    iir_x_buff_16[iir_idx_ptr_16] = sampBuffer[buff_idx_ptr];
+                    lp_y_buff[iir_idx_ptr_16] = iir_filt(iir_x_buff_16, lp_y_buff, iir_idx_ptr_16, a_lp, b_lp, N_LOWPASS_B);
+                    bp_y_buff[iir_idx_ptr_32] = iir_filt(iir_x_buff_32, bp_y_buff, iir_idx_ptr_32, a_bp, b_bp, N_BANDPASS_B);
+                    hp_y_buff[iir_idx_ptr_16] = iir_filt(iir_x_buff_16, hp_y_buff, iir_idx_ptr_16, a_hp, b_hp, N_HIGHPASS_B);
 
                     switch (filter_sel){
                     case LP_OUT:
-                        y16 = (int16_t)lp_y_buff[iir_idx_ptr];
+                        y16 = (int16_t)lp_y_buff[iir_idx_ptr_16];
                         break;
                     case BP_OUT:
-                        y16 = (int16_t)bp_y_buff[iir_idx_ptr];
+                        y16 = (int16_t)bp_y_buff[iir_idx_ptr_32];
                         break;
                     case LP_BP_OUT:
-                        y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + bp_y_buff[iir_idx_ptr]);
+                        y16 = (int16_t)(lp_y_buff[iir_idx_ptr_16] + bp_y_buff[iir_idx_ptr_32]);
                         break;
                     case HP_OUT:
-                        y16 = (int16_t)hp_y_buff[iir_idx_ptr];
+                        y16 = (int16_t)hp_y_buff[iir_idx_ptr_16];
                         break;
                     case LP_HP_OUT:
-                        y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + hp_y_buff[iir_idx_ptr]);
+                        y16 = (int16_t)(lp_y_buff[iir_idx_ptr_16] + hp_y_buff[iir_idx_ptr_16]);
                         break;
                     case LP_BP_HP_OUT:
-                        y16 = (int16_t)(lp_y_buff[iir_idx_ptr] + bp_y_buff[iir_idx_ptr] + hp_y_buff[iir_idx_ptr]);
+                        y16 = (int16_t)(lp_y_buff[iir_idx_ptr_16] + bp_y_buff[iir_idx_ptr_32] + hp_y_buff[iir_idx_ptr_16]);
                         break;
                     default:
                         y16 = sampBuffer[buff_idx_ptr];
+                        graph_vals[vals_index] = y16;
+                        vals_index++;
+                        if (vals_index >= 1024){
+                            vals_index = 0;
+                        }
 
                         break;
                     }
 
-                    iir_idx_ptr++;
-                    iir_idx_ptr &= (IIR_B_LEN-1);
+                    iir_idx_ptr_32++;
+                    iir_idx_ptr_32 &= (IIR_B_LEN-1);
+                    iir_idx_ptr_16++;
+                    iir_idx_ptr_16 &= (IIR_A_LEN-1);
                     end_t = clock();
                     LOG_printf(&trace, "Ticks: %d\n", (end_t - start_t));
                     //SWI_post(&SWI0);
@@ -278,6 +319,11 @@ void audioHWI(void){
 
     } else {
         y16 = 0;
+        SWI_post(&SWI0);
+        /*uint32_t dip_status;
+        DIP_getAll(&dip_status);
+        playback_mode = dip_status & MASK_PLAYBACK;
+        filter_sel = dip_status & MASK_FILT;*/
     }
 
 
